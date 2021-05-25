@@ -275,3 +275,5 @@ tags
 
 my_settings.py
 *.csv
+/CSV
+db_uploader.py
