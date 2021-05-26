@@ -1,7 +1,7 @@
 from django.db import models
 
 class Post(models.Model):
-    description = models.CharField(max_length = 300, null = True)
+    description = models.TextField(max_length = 2000, null = True)
     hit         = models.IntegerField(default = 0)
     created_at  = models.DateTimeField(auto_now_add = True)
     updated_at  = models.DateTimeField(auto_now = True)
@@ -13,9 +13,6 @@ class Post(models.Model):
 
     class Meta:
         db_table = 'posts'
-
-    def __str__(self):
-        return self.description
 
 class Image(models.Model):
     image_url = models.URLField(max_length = 500)
