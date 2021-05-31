@@ -24,4 +24,3 @@ class PostsDetailView(View):
         }
 
         return JsonResponse({'results':results}, status=200)
-        
