@@ -1,11 +1,18 @@
 import json
+import jwt
+import bcrypt
+
 from datetime     import datetime
-from unittest import mock
+from unittest     import mock
 
-from django.test  import TestCase, Client
+from django.test    import TestCase, Client
+from django.test    import Client
+from unittest.mock  import patch, MagicMock
 
-from posts.models import Post, LivingType, Space, Size, Style, Image, Like
-from users.models import User, UserInformation
+from posts.models   import Post, LivingType, Space, Size, Style, Image, Like, Comment,
+from users.models   import User, UserInformation
+from util.utils     import login_required
+from my_settings    import SECRET_KEY, ALGORITHM
 
 class PostsTest(TestCase):
     def setUp(self):
@@ -342,3 +349,135 @@ class PostsTest(TestCase):
             }
         )
         self.assertEqual(response.status_code, 200)
+
+class CommentPostTest(TestCase):
+    def setUp(self):
+        user = User.objects.create(
+            id      = 1,
+            email   = "test123@test.com"
+        )
+        self.token = jwt.encode({'user_id' : User.objects.get(email = 'test123@test.com').id}, SECRET_KEY, algorithm = ALGORITHM)
+    
+    def tearDown(self):
+        User.objects.all().delete()
+        Comment.objects.all().delete()
+
+    def test_comment_post_success(self):    
+        client    = Client()
+        test_data = {
+            "content" : "test comments",
+            "post_id" : "1",
+        }
+        header = {"HTTP_Authorization" : self.token}
+        response=client.post('/posts/comments',json.dumps(test_data), **header, content_type='application/json')
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(),{
+            "message": "SUCCESS",
+        })
+        
+    def test_comment_post_key_error(self):
+        client    = Client()
+        test_data = {
+            "user_id" : 1,
+        }
+        header = {"HTTP_Authorization" : self.token}
+        response=client.post('/posts/comments',json.dumps(test_data), **header, content_type='application/json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(),{
+            "message" : "KEY_ERROR"
+        })
+
+    def test_comment_post_invalid_post(self):
+        client    = Client()
+        test_data = {
+            "content" : "test comments",
+            "post_id" : "1000",
+        }
+        header = {"HTTP_Authorization" : self.token}
+        response=client.post('/posts/comments',json.dumps(test_data), **header, content_type='application/json')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(),{
+            "message" : "POST_DOES_NOT_EXIST"
+        })
+
+class CommentGetTest(TestCase):
+    def setUp(self):
+        user = User.objects.create(
+            id      = 1,
+            email   = "test123@test.com"
+        )
+    
+    def tearDown(self):
+        Comment.objects.all().delete()
+
+    def test_comment_get_success(self):
+        client           = Client()
+
+        response=client.get('/posts/comments/1',json.dumps(test_data), content_type='application/json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(),{
+            "data": [
+        {
+            "comment": "너무 예뻐요",
+            "date": "2021-06-01T02:44:22.756Z",
+            "img_url": "null",
+            "nickname": "나나",
+            "sub_comment": ""
+        },
+        {
+            "comment": "",
+            "date": "2021-06-01T02:44:22.758Z",
+            "img_url": "null",
+            "nickname": "모모",
+            "sub_comment": "너무 아름다워요"
+        },
+        {
+            "comment": "",
+            "date": "2021-06-01T02:44:22.761Z",
+            "img_url": "null",
+            "nickname": "누누",
+            "sub_comment": "좋아요"
+        },
+        {
+            "comment": "",
+            "date": "2021-06-01T02:44:22.763Z",
+            "img_url": "null",
+            "nickname": "니니",
+            "sub_comment": "멋있어요"
+        },
+        {
+            "comment": "oh my god",
+            "date": "2021-06-02T06:32:31.218Z",
+            "img_url": "null",
+            "nickname": "나나",
+            "sub_comment": ""
+        },
+        {
+            "comment": "new comment",
+            "date": "2021-06-02T06:43:03.607Z",
+            "img_url": "null",
+            "nickname": "나나",
+            "sub_comment": ""
+        },
+        {
+            "comment": "",
+            "date": "2021-06-02T06:56:42.096Z",
+            "img_url": "null",
+            "nickname": "나나",
+            "sub_comment": "12"
+        }
+        })
+        
+    def test_comment_get_fail_invalid_post(self):
+        client    = Client()
+
+        response=client.get('/posts/comments/1000',json.dumps(test_data), content_type='application/json')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(),{
+            "message" : "POST_DOES_NOT_EXIST"
+        })
