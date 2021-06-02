@@ -17,7 +17,7 @@ class PostsDetailView(View):
         results = {
             'id'            : post.id,
             'size'          : post.size.name,
-            'posted_time'   : post.created_at,
+            'posted_time'   : post.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'imgURL'        : post.image_set.first().image_url,
             'liked'         : post.like_set.count(), 
             'liked_nickname': [like.user.userinformation_set.first().nickname for like in post.like_set.all()]
