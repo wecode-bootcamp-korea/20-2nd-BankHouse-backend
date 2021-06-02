@@ -1,4 +1,6 @@
 import json
+from datetime     import datetime
+from unittest import mock
 
 from django.test  import TestCase, Client
 
@@ -7,8 +9,6 @@ from users.models import User, UserInformation
 
 class PostsTest(TestCase):
     def setUp(self):
-        client = Client()
-
         #livingtype
         LivingType.objects.create(
                 id    = 1,
@@ -336,7 +336,7 @@ class PostsTest(TestCase):
                         "다다",
                         "가가"
                     ],
-                    "posted_time": "2021-06-02T02:30:03.407Z",
+                    "posted_time": Post.objects.get(id = 3).created_at.strftime('%Y-%m-%d %H:%M:%S'),
                     "size": "10평 미만"
                 }
             }
