@@ -1,17 +1,27 @@
-import json
-from json.decoder           import JSONDecodeError
+import json, boto3, uuid
+
+from datetime              import datetime
+from json.decoder          import JSONDecodeError
+import json, boto3
+from uuid                  import uuid4
 
 from django.http           import JsonResponse
 from django.views          import View
-from django.db.models      import Q, F
-from django.db.models      import Count
+from django.db.models      import Q, F, Count
 
 from posts.models          import Post, LivingType, Space, Size, Style, Image, Comment
 from users.models          import User
 from util.utils            import login_required
 
+from bankhouse.settings    import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 
 class PostDetailView(View):
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+    )
+    
     def get(self, request, post_id):
         if not Post.objects.filter(id = post_id).exists():
             return JsonResponse({'message':'INVALID_POST'}, status=404)
@@ -27,6 +37,57 @@ class PostDetailView(View):
         }
 
         return JsonResponse({'results':results}, status=200)
+
+    @login_required
+    def post(self, request):
+        data = json.loads(request.POST['info'])
+        try:
+            image      = request.FILES['image']
+            print(image)
+            my_uuid = str(uuid.uuid4())
+
+            self.s3_client.upload_fileobj(
+                image,
+                "wecode-bankhouse",
+                my_uuid,
+                ExtraArgs={
+                    "ContentType": image.content_type
+                }
+            )
+            image_url = "https://thumbnailofcourse.s3.us-east-2.amazonaws.com/" + my_uuid
+
+            post = Post.objects.create(
+                description = data.get('description'),  
+                living_type = LivingType.objects.get(id = data["livingtype"]),
+                space_id    = data["space"], 
+                size_id     = data["size"],
+                style_id    = data["style"],
+                user_id     = request.user.id
+			)
+
+            image = Image.objects.create(
+                image_url = image_url,  ## 사진올리는게 의무적 ##
+                post_id   = post.id
+            )
+            
+            return JsonResponse({'message': 'SUCCESS'}, status =201)
+            
+        except KeyError:
+            return JsonResponse({"message": "KEY_ERROR"}, status=400)
+	
+
+    @login_required
+    def delete(self, request, post_id):
+		# 게시물 확인
+        post_check = Post.objects.filter(id = post_id)
+
+		 # 게시물이 없는 경우
+        if not post_check.exists():
+            return JsonResponse({"message": "INVALID_POST"}, status=404)
+
+        post_check.delete()
+		
+        return JsonResponse({"message": "SUCCESS"}, status=204)
 
 class CommentView(View):
     @login_required
