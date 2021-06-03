@@ -19,7 +19,7 @@ class SignUpView(View):
             data      = json.loads(request.body)
             email     = data["email"]
             nickname  = data["nickname"]
-            password  = data.get("password", None)
+            password  = data.get("password", "")
             is_expert = data.get("is_expert", False)
             kakao_id  = data.get("kakao_id", None)
 
@@ -35,7 +35,7 @@ class SignUpView(View):
             if not email_validation.match(email):
                 return JsonResponse({"message" : "INVALID_EMAIL"}, status=400)
             
-            if not password_validation.match(password) and password is not None:
+            if not password_validation.match(password) and password:
                 return JsonResponse({"message" : "INVALID_PASSWORD"}, status=400)
 
             hashed_password = bcrypt.hashpw(password.encode("utf-8"),bcrypt.gensalt()).decode("utf-8")
