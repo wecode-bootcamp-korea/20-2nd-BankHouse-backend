@@ -9,13 +9,14 @@ from django.test    import TestCase, Client
 from django.test    import Client
 from unittest.mock  import patch, MagicMock
 
-from posts.models   import Post, LivingType, Space, Size, Style, Image, Like, Comment,
+from posts.models   import Post, LivingType, Space, Size, Style, Image, Like, Comment
 from users.models   import User, UserInformation
 from util.utils     import login_required
 from my_settings    import SECRET_KEY, ALGORITHM
 
 class PostsTest(TestCase):
     def setUp(self):
+
         #livingtype
         LivingType.objects.create(
                 id    = 1,
@@ -470,7 +471,7 @@ class CommentGetTest(TestCase):
             "nickname": "나나",
             "sub_comment": "12"
         }
-        })
+            ]})
         
     def test_comment_get_fail_invalid_post(self):
         client    = Client()
@@ -481,3 +482,41 @@ class CommentGetTest(TestCase):
         self.assertEqual(response.json(),{
             "message" : "POST_DOES_NOT_EXIST"
         })
+    def test_posts_get_success(self):
+        client   = Client()
+        response = client.get('/posts?offset=1&limit=5&orderby=like&livingtype=2&size=1&space=5&style=1&expert=True')
+        self.assertEqual.__self__.maxDiff = None
+        self.assertEqual(response.json(),
+            {
+                "post_count": 2,
+                "results": [
+                    {
+                        "comment_count": 0,
+                        "description": "",
+                        "hit": 44,
+                        "like_count": 1,
+                        "post_id": 73,
+                        "post_image": "https://images.unsplash.com/photo-1543248939-ff40856f65d4?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MzJ8fHBob3RvJTIwZnJhbWV8ZW58MHx8MHx8&auto=format&fit=crop&w=900&q=60",
+                        "recently_comment": "",
+                        "recently_comment_image": "",
+                        "recently_comment_nickname": "",
+                        "user_image": None,
+                        "user_nickname": "바바"
+                    },
+                    {
+                        "comment_count": 0,
+                        "description": "",
+                        "hit": 4647,
+                        "like_count": 0,
+                        "post_id": 76,
+                        "post_image": "",
+                        "recently_comment": "",
+                        "recently_comment_image": "",
+                        "recently_comment_nickname": "",
+                        "user_image": None,
+                        "user_nickname": "바바"
+                    }
+                ]
+            }
+        )
+        self.assertEqual(response.status_code, 200)
